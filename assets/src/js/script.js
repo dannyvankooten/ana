@@ -11,7 +11,8 @@ class App extends Component {
     super(props)
 
     this.state = {
-      authenticated: document.cookie.indexOf('auth') > -1
+      authenticated: document.cookie.indexOf('auth') > -1,
+      authorized: document.cookie.indexOf('auth') > -1,
     }
 
     this.fetchAuthStatus()
@@ -19,27 +20,41 @@ class App extends Component {
 
   @bind
   fetchAuthStatus() {
-    Client.request(`session`)
-      .then((d) => { 
-        this.setState({ authenticated: d })
+    Client.request(`session`, {}, true)
+      .then(({ d, status }) => {
+        this.setState({
+          authorized: status === 200,
+          authenticated: d,
+        })
       })
   }
 
   @bind
-  toggleAuth() {
+  logout() {
     this.setState({ 
-      authenticated: !this.state.authenticated 
+      authenticated: false,
+      authorized: false,
     })
+  }
+
+  @bind
+  authorized() {
+    return this.state.authorized
+  }
+
+  @bind
+  authenticated() {
+    return this.state.authenticated
   }
 
   render(props, state) {
     // logged-in
-    if( state.authenticated ) {
-      return <Dashboard onLogout={this.toggleAuth} />
+    if( state.authorized || state.authenticated ) {
+      return <Dashboard onLogout={this.logout} onLogin={this.fetchAuthStatus} authorized={this.authorized} authenticated={this.authenticated} />
     }
 
     // logged-out
-    return <Login onLogin={this.toggleAuth} />
+    return <Login onLogin={this.fetchAuthStatus} />
   }
 }
 
